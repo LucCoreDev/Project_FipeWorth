@@ -9,7 +9,7 @@ import java.net.http.HttpResponse;
 public class ConsumoAPI {
 
     // Fazenendo uma classe para consumir uma API
-    public String obterdados(String endereco){
+    public String obterDados(String endereco){
         // Aqui fazendo um requisição http
         HttpClient client = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
