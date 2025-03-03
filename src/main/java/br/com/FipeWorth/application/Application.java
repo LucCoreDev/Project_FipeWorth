@@ -1,5 +1,6 @@
 package br.com.FipeWorth.application;
 
+import br.com.FipeWorth.application.principal.Principal;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,10 +16,7 @@ public class Application implements CommandLineRunner {
 
 	@Override
 	public void run(String... args) throws Exception {
-		Scanner sc = new Scanner(System.in);
-
-
-
-		sc.close();
+		Principal principal = new Principal();
+		principal.exbiriMenu();
 	}
 }
