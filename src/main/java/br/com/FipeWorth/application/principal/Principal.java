@@ -2,11 +2,16 @@ package br.com.FipeWorth.application.principal;
 
 import br.com.FipeWorth.application.model.Dados;
 import br.com.FipeWorth.application.model.Modelos;
+import br.com.FipeWorth.application.model.Veiculo;
 import br.com.FipeWorth.application.service.ConsumoAPI;
 import br.com.FipeWorth.application.service.ConverteDados;
 
+import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 public class Principal {
     private final Scanner sc = new Scanner(System.in);
@@ -45,28 +50,72 @@ public class Principal {
 
         // Verificando se o código não da null, para não dar problema na API
         try{
-            String json = consumo.obterDados(endereco);
+            AtomicReference<String> json = new AtomicReference<>(consumo.obterDados(endereco));
             // Sistema de segurança para saber se a API está sendo chamada certa
-            if (json == null || json.isEmpty()){
+            if (json.get() == null || json.get().isEmpty()){
                 System.out.println("Erro em obter os dados da API!");
                 return;
             }
             // criado através de uma classe genêrica e um record
-            var marcas = conversor.obterLista(json, Dados.class);
+            var marcas = conversor.obterLista(json.get(), Dados.class);
             marcas.stream()
                     .sorted(Comparator.comparing(Dados::codigo))
                     .forEach(System.out::println);
             System.out.println("Informe o condigo para consulta: ");
             var codigoMarca = sc.nextInt();
+            sc.nextLine();
+
             // Referente ao modelo do carro
             endereco = endereco + "/" + codigoMarca + "/modelos";
-            json = consumo.obterDados(endereco);
-            var modeloLista = conversor.obterDados(json, Modelos.class);
+            json.set(consumo.obterDados(endereco));
+            var modeloLista = conversor.obterDados(json.get(), Modelos.class);
+
+            if (modeloLista == null || modeloLista.modelos() == null) {
+                System.out.println("Nenhum modelo encontrado para essa marca.");
+                return;
+            }
 
             System.out.println("Modelos dessa marca são: ");
             modeloLista.modelos().stream()
                     .sorted(Comparator.comparing(Dados::codigo))
                     .forEach(System.out::println);
+
+            System.out.println("\n Digite um trecho do nome do carro a ser buscado: ");
+            var nomeVeiculo = sc.nextLine();
+            List<Dados> modelosFiltrados = modeloLista.modelos().stream()
+                    .filter(m -> m.nome().toLowerCase().contains(nomeVeiculo.toLowerCase()))
+                    .collect(Collectors.toList());
+
+            System.out.println("\n modelos filtrados");
+            modelosFiltrados.forEach(System.out::println);
+
+            System.out.println("Digite o código do modelo para busca os valores de avaliação: ");
+            var codigoDoModelo = sc.nextLine();
+
+            endereco = endereco + "/" + codigoDoModelo + "/anos";
+            json.set(consumo.obterDados(endereco));
+            List<Dados> anos = conversor.obterLista(json.get(), Dados.class);
+            List<Veiculo> veiculos = new ArrayList<>();
+
+            String finalEndereco = endereco;
+            anos.forEach(ano -> {
+                var enderecoAnos = finalEndereco + "/" + ano.codigo();
+                String jsonAno = consumo.obterDados(enderecoAnos);
+
+                if (jsonAno == null || jsonAno.isEmpty()) {
+                    System.out.println("Erro ao obter dados para o ano: " + ano.codigo());
+                    return;
+                }
+
+                Veiculo veiculo = conversor.obterDados(jsonAno, Veiculo.class);
+                if (veiculo != null) {
+                    veiculos.add(veiculo);
+                }
+            });
+
+            System.out.println("\n Todos os veiculos filtrados com a avaliações por ano: ");
+            veiculos.forEach(System.out::println);
+
         }catch (Exception e){
             System.out.println("Erro em busca os dados" + e.getMessage());
         }
